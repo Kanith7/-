@@ -1,0 +1,53 @@
+#include <avr/io.h>
+#include <util/delay.h>
+
+// Define ADC channels for X, Y, Z axes
+#define X_AXIS 0  // ADC0 (A0)
+#define Y_AXIS 1  // ADC1 (A1)
+#define Z_AXIS 2  // ADC2 (A2)
+
+// Define thresholds
+#define ADC_THRESHOLD_HIGH 450  // Impact detection threshold (~2g)
+#define ADC_THRESHOLD_LOW  350  // Free fall threshold (~0g)
+
+// Buzzer pin for alarm (PB4 - Digital pin 12 on Arduino)
+#define BUZZER_PIN PB4
+
+void ADC_init() {
+    // Configure ADC: AVcc as reference, left adjust result, select channel 0 initially
+    ADMUX = (1 << REFS0);  // AVcc with external capacitor at AREF pin
+    ADCSRA = (1 << ADEN)  |  // Enable ADC
+             (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Prescaler of 128
+}
+
+uint16_t ADC_read(uint8_t channel) {
+    ADMUX = (ADMUX & 0xF0) | (channel & 0x0F); // Select ADC channel
+    ADCSRA |= (1 << ADSC);  // Start conversion
+    while (ADCSRA & (1 << ADSC));  // Wait for conversion to finish
+    return ADC;
+}
+
+void setup() {
+    // Initialize ADC
+    ADC_init();
+    
+    // Configure buzzer pin as output
+    DDRB |= (1 << BUZZER_PIN);
+    PORTB &= ~(1 << BUZZER_PIN); // Ensure buzzer is off initially
+}
+
+void loop() {
+    // Read ADC values
+    uint16_t x_adc = ADC_read(X_AXIS);
+    uint16_t y_adc = ADC_read(Y_AXIS);
+    uint16_t z_adc = ADC_read(Z_AXIS);
+
+    // Check free-fall condition
+    if (x_adc <= ADC_THRESHOLD_LOW && y_adc <= ADC_THRESHOLD_LOW && z_adc <= ADC_THRESHOLD_LOW) {
+        PORTB |= (1 << BUZZER_PIN);  // Turn on buzzer
+    } else {
+        PORTB &= ~(1 << BUZZER_PIN); // Turn off buzzer
+    }
+
+    _delay_ms(100); // Small delay to stabilize readings
+}
