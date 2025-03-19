@@ -31,5 +31,3 @@ The **Fall Detection System** is designed to detect sudden falls using an **ADXL
    - When a fall is detected, the **buzzer turns ON** to alert nearby people.
    - If no fall is detected, the buzzer remains **OFF**.
 
-## Code Implementation
-The following **C code** is used to detect falls and activate the buzzer accordingly:
